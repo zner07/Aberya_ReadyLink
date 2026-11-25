@@ -9,15 +9,16 @@
      /api/ai/...            -> AI-assisted hazard classification (through this server)
      GET /uploads/<name>    -> uploaded photos (only server-generated names)
      GET /api/<anything>    -> 404 JSON error
-     GET / , /index.html    -> the EXISTING frontend index.html, unchanged
+     GET / , /index.html    -> the EXISTING frontend index.html, unchanged (the PUBLIC site, no admin pages in it)
      GET /css/*, /js/*, /data/* -> the EXISTING frontend files, unchanged
+     GET /admin/            -> the separate ADMIN site (admin/index.html). /admin redirects to /admin/. Scripts: /admin/js/*
      everything else        -> 404 (server/, .env, .git, README.md ... are never served)
 
    The frontend files are served exactly as they are on disk. The frontend keeps running in demo mode
    (js/api.js is not touched until Phase 2). Because the page and the API share one origin, no CORS is needed. */
 const path = require('node:path');
 const express = require('express');
-const { classify, PUBLIC_DIRS } = require('./staticPolicy');
+const { classify, PUBLIC_DIRS, ADMIN_ASSET_DIRS } = require('./staticPolicy');
 const { apiNotFound, errorHandler } = require('./middleware/errors');
 const { createReportHandlers, createReportsRouter } = require('./routes/reports');
 const { createAdminHandlers, createAdminRouter } = require('./routes/admin');
@@ -106,16 +107,28 @@ api.use('/admin', createAdminRouter(createAdminHandlers({ config, auth })));
     });
   });
 
+  // The ADMIN site is its own page. The public index.html never loads it and has no link to it.
+  // Express matches "/admin" and "/admin/" with the same route, so the handler looks at the real address.
+  // The page is only the screen: every admin API call still needs the admin login (HttpOnly session cookie), checked by the server.
+  app.get(['/admin', '/admin/', '/admin/index.html'], (req, res, next) => {
+    const kind = classify(req.originalUrl).kind;
+    if (kind === 'admin-redirect') return res.redirect(302, '/admin/'); // the page uses relative paths (../css, js/), so it needs the trailing slash
+    if (kind !== 'admin-index') return next();
+    res.sendFile('index.html', { root: path.join(config.frontendDir, 'admin'), dotfiles: 'deny', cacheControl: false, headers: { 'Cache-Control': cacheControl, 'X-Robots-Tag': 'noindex, nofollow' } }, (err) => {
+      if (err) next(err);
+    });
+  });
+
   // Defense in depth: staticPolicy rejects suspicious paths first, express.static is also locked to one folder.
   const staticGuard = (req, res, next) => {
     if (classify(req.originalUrl).kind === 'asset') return next();
     res.status(404).type('text/plain').send('Not found');
   };
-  for (const dir of PUBLIC_DIRS) {
+  for (const dir of [...PUBLIC_DIRS, ...ADMIN_ASSET_DIRS]) {
     app.use(
       '/' + dir,
       staticGuard,
-      express.static(path.join(config.frontendDir, dir), {
+      express.static(path.join(config.frontendDir, ...dir.split('/')), {
         index: false,
         dotfiles: 'ignore',
         fallthrough: true,

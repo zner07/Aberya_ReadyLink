@@ -5,7 +5,13 @@
    ========================================================= */
 const blankFilter=()=>({lv:'all',cat:'all',st:'all',q:''});
 const S={admin:false,pf:blankFilter(),af:blankFilter(),sel:null,heroSel:'RL-029',mapView:'markers',hot:null,mine:{state:'idle',message:''},adminBusy:false,remarkDraft:null,reports:{state:'ready',message:'',loadedAt:Date.now()},next:null,prev:null,dlg:null};
-const F=()=>location.hash.startsWith('#/admin')?S.af:S.pf;       // public map and admin keep separate filters
+/* window.READYLINK_APP is set to 'admin' by admin/js/admin-app.js. The public site never sets it. */
+const IS_ADMIN_APP=()=>window.READYLINK_APP==='admin';
+const F=()=>IS_ADMIN_APP()?S.af:S.pf;       // public map and admin keep separate filters
+
+/* theme (light/dark) toggle, shared by the public site and the admin site */
+function theme(){return document.documentElement.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light')}
+const themeBtn=()=>`<button class="iconbtn" data-act="theme" aria-label="Toggle theme">${ic(theme()==='dark'?'sun':'moon',17)}</button>`;
 const newDraft=()=>({step:1,img:null,fname:'',type:null,x:null,y:null,lat:null,lng:null,locSource:'',locLabel:'',gps:{state:'idle',msg:''},gpsRun:0,exif:null,photoRun:0,search:{q:'',state:'idle',results:[],msg:'',open:false,active:-1,seq:0},desc:'',locating:false,scan:false,res:null,done:null,sending:false,run:0});
 let D=newDraft();                                                // the in-progress "Report a risk" draft
 const dirty=()=>!!(D.img||D.type||D.x!=null||D.desc.trim());

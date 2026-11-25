@@ -17,7 +17,7 @@ const server = (handler, { mode = 'server', config } = {}) => {
   const sessionStorage = fakeStorage();
   const localStorage = fakeStorage();
   const fetch = fakeFetch(handler);
-  const fe = loadFrontend({ config: { API_MODE: mode, ...(config || {}) }, fetch, localStorage, sessionStorage, globals: { S, toast: (m) => toasts.push(m), goto: (h) => gotos.push(h), render: () => {}, location: { hash: '#/admin/reports' } } });
+  const fe = loadFrontend({ config: { API_MODE: mode, ...(config || {}) }, fetch, localStorage, sessionStorage, globals: { S, toast: (m) => toasts.push(m), goto: (h) => gotos.push(h), render: () => {}, location: { hash: '#/reports' } } });
   return fe.API.init().then(() => Object.assign(fe, { S, toasts, gotos, sessionStorage, localStorage }));
 };
 const login = (body) => reply(200, body || { ok: true, admin: { name: 'boss' }, writes: true });
@@ -106,8 +106,8 @@ test('ensureAdminSession: a signed-in admin passes; when the server says the log
   fe.S.admin = true;
   assert.equal(await fe.run('ensureAdminSession()'), false);
   assert.equal(fe.S.admin, false);
-  assert.deepEqual(fe.gotos, ['#/admin/login']);
-  assert.equal(fe.S.next, '#/admin/reports', 'it remembers where the admin was going');
+  assert.deepEqual(fe.gotos, ['#/login']);
+  assert.equal(fe.S.next, '#/reports', 'it remembers where the admin was going');
   assert.match(fe.toasts[0], /session ended/);
 
   const ok = await server(() => reply(200, { configured: true, authenticated: true, name: 'boss', writes: true }));
@@ -123,7 +123,7 @@ test('when an admin change is answered with 401 the page signs out and goes to t
   const result = await fe.run("adminUpdate('RL-026', { status: 'Verified', remark: 'My careful remark' }, 'ok')");
   assert.equal(result.ok, false);
   assert.equal(fe.S.admin, false);
-  assert.deepEqual(fe.gotos, ['#/admin/login']);
+  assert.deepEqual(fe.gotos, ['#/login']);
   assert.match(fe.toasts[0], /session has ended/);
   assert.deepEqual(plain(fe.S.remarkDraft), { id: 'RL-026', text: 'My careful remark' });
 });
@@ -144,7 +144,7 @@ test('demo mode (a static copy): sign-in is simulated, needs no network, and is 
 
 function loginPage(mode, adminInfo) {
   const fe = loadFrontend({ config: { API_MODE: mode }, fetch: fakeFetch(() => reply(200, {})), globals: { ic: (n) => `<i class="ic-${n}"></i>`, LOGO: '<svg/>', S: { admin: false } } });
-  const script = new vm.Script(read('js/pages-admin.js'), { filename: 'pages-admin.js' });
+  const script = new vm.Script(read('admin/js/pages-admin.js'), { filename: 'pages-admin.js' });
   script.runInContext(fe.sandbox);
   vm.runInContext(/const esc=[^\n]*\n/.exec(read('js/utils.js'))[0], fe.sandbox);
   vm.runInContext(`API.mode = ${JSON.stringify(mode)}; API.adminInfo = ${JSON.stringify(adminInfo || null)};`, fe.sandbox);
@@ -156,8 +156,8 @@ test('the login page has NO prefilled username or password, and no credentials a
     assert.doesNotMatch(html, /value=/, 'no input has a value');
     assert.doesNotMatch(html, /demo-password|admin@barangay/);
   }
-  for (const file of fs.readdirSync(path.join(FRONTEND_DIR, 'js'))) assert.doesNotMatch(read(`js/${file}`), /demo-password|admin@barangay\.example/, file);
-  assert.doesNotMatch(read('index.html'), /demo-password|admin@barangay/);
+  for (const dir of ['js', 'admin/js']) for (const file of fs.readdirSync(path.join(FRONTEND_DIR, dir))) assert.doesNotMatch(read(`${dir}/${file}`), /demo-password|admin@barangay\.example/, `${dir}/${file}`);
+  for (const page of ['index.html', 'admin/index.html']) assert.doesNotMatch(read(page), /demo-password|admin@barangay/, page);
 });
 
 test('the password box is hidden by default and has an accessible show/hide button next to it', () => {
@@ -191,15 +191,15 @@ test('server mode with an admin set up shows a clean form with no notice', () =>
 
 /* ---------------- routes ---------------- */
 
-test('the router has a dedicated admin login route and sends every other admin page there when signed out', () => {
-  const router = read('js/router.js');
-  assert.match(router, /p\[1\]==='login'/);
-  assert.match(router, /else if\(!S\.admin\)\{S\.next=hash;goto\('#\/admin\/login'\);return\}/);
-  assert.match(router, /if\(S\.admin\)\{goto\('#\/admin'\);return\}/, 'a signed-in admin is not shown the login page');
+test('the admin site has a dedicated login route and sends every other admin page there when signed out', () => {
+  const router = read('admin/js/admin-router.js');
+  assert.match(router, /p\[0\]==='login'/);
+  assert.match(router, /else if\(!S\.admin\)\{S\.next=hash;goto\('#\/login'\);return\}/);
+  assert.match(router, /if\(S\.admin\)\{goto\('#\/overview'\);return\}/, 'a signed-in admin is not shown the login page');
 });
 
 test('the password toggle changes only the input type and never touches the value', () => {
-  const code = /if\(k==='togglepw'\)[^\n]*\n[^\n]*\n/.exec(read('js/events.js'));
+  const code = /if\(k==='togglepw'\)[^\n]*\n[^\n]*\n/.exec(read('admin/js/admin-events.js'));
   assert.ok(code, 'the handler exists');
   assert.doesNotMatch(code[0], /\.value\s*=/, 'it never assigns the value');
   assert.match(code[0], /pw\.type=show\?'text':'password'/);

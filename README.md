@@ -13,7 +13,8 @@ No install and no build step.
 > **Extract the zip first.** If you double-click `index.html` while it is still inside the .zip, Windows opens only that one file
 > and the page stays blank. Right-click the zip, choose **Extract All**, then open `index.html` from the extracted folder.
 
-- **Quickest:** double-click `index.html`.
+- **Quickest:** double-click `index.html` (the public site).
+- **Admin site:** it is a separate page, `admin/index.html`. There is no link to it anywhere on the public site, so open it by its own address: `/admin/` when the server is running (for example `http://localhost:3000/admin/`), or double-click `admin/index.html` in demo mode. The real admin login only exists on the server; in demo mode sign-in is only simulated.
 - **VS Code:** open this folder, install the *Live Server* extension, right-click `index.html` and choose **Open with Live Server**.
 - **GitHub Pages (free hosting):** push the folder to a repo, then **Settings -> Pages -> Deploy from a branch -> main / root**.
 
@@ -23,7 +24,16 @@ The Archivo font loads from Google Fonts, so it needs internet. Without it the p
 
 ```
 readylink/
-  index.html            page skeleton + <link>/<script> tags (script ORDER matters)
+  index.html            the PUBLIC site: page skeleton + <link>/<script> tags (script ORDER matters). Loads no admin file.
+  admin/
+    index.html          the separate ADMIN site (served at /admin/). Same css, shared scripts from ../js/, plus the files below
+    js/
+      admin-app.js      first script: marks the page as the admin site (window.READYLINK_APP = 'admin')
+      admin-shell.js    sign-in page frame, admin sidebar + mobile menu
+      pages-admin.js    Admin sign in, Overview, Reports, Report review
+      admin-router.js   hash router for the admin site: #/login #/overview #/reports #/report/ID #/map
+      admin-actions.js  the admin update flow (locking, messages, refresh), testable without a browser
+      admin-events.js   click/change/keyboard handlers and app boot of the admin site
   css/
     tokens.css          colors, shadows, font stack, light + dark theme variables
     styles.css          all component, page and responsive styles
@@ -39,23 +49,25 @@ readylink/
     config.js           settings: demo / server / auto (see server/README.md)
     api-server.js       the ONLY file that talks to the real reports API (Phase 2 and 3)
     api.js              DEMO DATA LAYER + switch to the server (server mode: see server/README.md)
-    admin-actions.js    the admin update flow (locking, messages, refresh), testable without a browser
     exif.js             reads the GPS position stored in a photo (suggestion only), no libraries
     location.js         choosing the hazard location: GPS, map pin, place search, photo suggestion
-    state.js            UI state, report draft, toast, confirm dialog
+    state.js            UI state, report draft, toast, confirm dialog, light/dark theme helpers (shared with the admin site)
     connection.js       online/offline pill, sync states (Saved locally, Pending sync, Syncing, Submitted)
-    shells.js           navbar, admin sidebar, mobile menus, footer
-    pages-public.js     Home, Report a risk (4 steps), Risk map, Reports (this device), Track report
-    pages-admin.js      Admin sign in, Overview, Reports, Report review
-    router.js           hash router + render()
-    events.js           click/change/keyboard handlers, mobile menu, app boot
+    menu.js             mobile menu open/close logic (shared with the admin site)
+    shells.js           public navbar, mobile menu, footer
+    pages-public.js     Home, Report a risk (4 steps), Risk map, Reports (this device), Track report. The map and timeline code is also reused by the admin site
+    router.js           hash router + render() of the public site
+    events.js           click/change/keyboard handlers and app boot of the public site
   data/
     alangilan.geojson            barangay boundary (OpenStreetMap)
     alangilan-features.geojson   roads, stream, BatStateU campus (OpenStreetMap)
 ```
 
 The scripts are plain (non-module) scripts that share one global scope, so they work from `file://`.
-Keep the order in `index.html`: each file may use things defined by the files above it.
+Keep the order in `index.html` and `admin/index.html`: each file may use things defined by the files above it.
+The public site and the admin site both define `render()`, `boot()` and friends, so never load the scripts of one site on the page of the other (`server/tests/unit/adminSeparation.test.js` checks this).
+
+**Security note:** keeping the admin screens on their own page is about structure and tidiness, not protection. The files under `/admin/` are ordinary frontend code and contain no secrets. What actually protects the data is the server: every admin API call needs the admin login (HttpOnly session cookie) and is checked by the server on every request.
 
 ## Where to connect real work
 

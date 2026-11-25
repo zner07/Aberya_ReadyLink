@@ -307,14 +307,14 @@ Start the server. It prints either `Admin: NOT SET UP` or `Admin: login set up f
 
 **Admin login**
 1. If it says NOT SET UP: run `npm.cmd run admin:setup`, answer the questions, restart the server.
-2. Open http://localhost:3000 and press **Admin**. You land on **Admin sign in** (the address ends with `#/admin/login`). The boxes are empty and the password is hidden.
+2. The public site has no Admin link. Open http://localhost:3000/admin/ (typing `/admin` also works, it redirects to `/admin/`). You land on **Admin sign in** (the address ends with `#/login`). The boxes are empty and the password is hidden. Also check that http://localhost:3000/ (the public site) shows no Admin link and that `#/admin` there just shows the home page.
 3. Type a password and press the **eye** button: the password shows, press again: it hides. What you typed stays. Try it on your phone too.
 4. Type a wrong password: you get "Incorrect username or password." Use the right one: you reach the dashboard.
-5. As a visitor (private window, not signed in) open `http://localhost:3000/#/admin/reports`: you must be sent to the login page.
+5. As a visitor (private window, not signed in) open `http://localhost:3000/admin/#/reports`: you must be sent to the login page.
 6. In the private window open the browser console (F12) and run
    `fetch('/api/reports/RL-026',{method:'PATCH',headers:{'content-type':'application/json'},body:'{"status":"Resolved"}'}).then(r=>r.status)`
    It must print **401**, and the report must not change.
-7. Change a status as the admin, then press **Logout**. Open `#/admin` again: the login page. Restart the server while signed in and try a change: you are sent back to the login page.
+7. Change a status as the admin, then press **Logout**. Open `http://localhost:3000/admin/` again: the login page. Restart the server while signed in and try a change: you are sent back to the login page.
 
 **Locations** (open Report a risk, pick a sample photo, Continue)
 8. Tap the map: a pin and its coordinates appear. Drag the pin. Tap far outside the barangay: a message, no pin.

@@ -7,8 +7,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { FRONTEND_DIR } = require('./env');
 
-// Same order as in index.html, up to and including api.js.
-const SCRIPTS = ['data', 'seed-data', 'demo-insights', 'map-data', 'map', 'config', 'api-server', 'api', 'exif', 'location', 'admin-actions'];
+// Same order as in index.html, up to and including api.js. admin-actions.js is part of the separate admin site (admin/js/).
+const SCRIPTS = ['js/data.js', 'js/seed-data.js', 'js/demo-insights.js', 'js/map-data.js', 'js/map.js', 'js/config.js', 'js/api-server.js', 'js/api.js', 'js/exif.js', 'js/location.js', 'admin/js/admin-actions.js'];
 
 /* A tiny localStorage / sessionStorage. failing = true makes every call throw (like a blocked browser). */
 function fakeStorage({ failing = false } = {}) {
@@ -60,13 +60,13 @@ function loadFrontend({ config, fetch, localStorage = fakeStorage(), sessionStor
   const sandbox = {
     console, setTimeout, clearTimeout, AbortController, fetch, localStorage, sessionStorage, crypto,
     guessType: () => 'road', // lives in pages-public.js (needs the DOM); only used when a draft has no sample type
-    ...globals, // extra stand-ins, for example S, toast and render for js/admin-actions.js
+    ...globals, // extra stand-ins, for example S, toast and render for admin/js/admin-actions.js
   };
   sandbox.window = sandbox;
   if (config) sandbox.READYLINK_CONFIG = config;
   vm.createContext(sandbox);
   for (const name of SCRIPTS) {
-    const file = path.join(FRONTEND_DIR, 'js', `${name}.js`);
+    const file = path.join(FRONTEND_DIR, ...name.split('/'));
     new vm.Script(fs.readFileSync(file, 'utf8'), { filename: file }).runInContext(sandbox);
   }
   const run = (code) => vm.runInContext(code, sandbox);

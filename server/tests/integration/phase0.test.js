@@ -189,3 +189,51 @@ test('in the test environment the frontend is not cached (no stale files while d
   assert.match((await raw('GET', '/')).headers['cache-control'], /no-cache/);
   assert.match((await raw('GET', '/js/api.js')).headers['cache-control'], /no-cache/);
 });
+
+/* ---- the separate ADMIN site (admin/index.html at /admin/) ---- */
+
+test('"/admin/" and "/admin/index.html" serve the separate admin page, byte for byte, marked noindex', async () => {
+  const disk = fs.readFileSync(path.join(config.frontendDir, 'admin', 'index.html'));
+  for (const p of ['/admin/', '/admin/index.html', '/admin/?x=1']) {
+    const r = await raw('GET', p);
+    assert.equal(r.status, 200, p);
+    assert.match(r.headers['content-type'], /text\/html/);
+    assert.equal(sha256(r.body), sha256(disk), p);
+    assert.match(r.headers['x-robots-tag'], /noindex/);
+    assert.match(r.headers['content-security-policy'], /script-src 'self'/, 'the same security policy applies');
+  }
+  assert.match(disk.toString(), /<title>READYLINK Admin<\/title>/);
+});
+
+test('"/admin" (no slash) redirects to "/admin/" once, so the relative file paths of the admin page work', async () => {
+  for (const p of ['/admin', '/admin?x=1']) {
+    const r = await raw('GET', p);
+    assert.equal(r.status, 302, p);
+    assert.equal(r.headers.location, '/admin/');
+  }
+});
+
+test('every admin script is served byte for byte from /admin/js/', async () => {
+  const files = listFiles('admin/js');
+  assert.ok(files.length >= 6, `expected the admin scripts, found ${files.length}`);
+  for (const name of files) {
+    const r = await raw('GET', `/admin/js/${name}`);
+    assert.equal(r.status, 200, name);
+    assert.match(r.headers['content-type'], /javascript/);
+    assert.equal(sha256(r.body), sha256(fs.readFileSync(path.join(config.frontendDir, 'admin', 'js', name))), name);
+  }
+});
+
+test('the public page is served without any admin script, and the admin folder offers nothing but its page and scripts', async () => {
+  const pub = (await raw('GET', '/')).body.toString();
+  assert.doesNotMatch(pub, /admin/i, 'the public index.html does not mention the admin site at all');
+  for (const p of ['/admin/js', '/admin/js/', '/admin/css/x.css', '/admin/server/package.json', '/admin/js/.env', '/admin/js/../../server/package.json',
+    '/admin/%2e%2e/server/package.json', '/admin//index.html', '/ADMIN/', '/admin/index.htm']) {
+    assert.equal((await raw('GET', p)).status, 404, p);
+  }
+});
+
+test('only GET and HEAD are served for /admin/', async () => {
+  for (const method of ['POST', 'PUT', 'DELETE']) assert.equal((await raw(method, '/admin/')).status, 404, method);
+  assert.equal((await raw('HEAD', '/admin/')).status, 200);
+});

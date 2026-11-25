@@ -2,7 +2,7 @@
 
    This file has no DOM code on purpose, so it can be tested without a browser
    (see server/tests/unit/frontendAdmin.test.js). It uses these globals from the other files:
-   S (state.js), R and API (api.js), loadReports (api.js), toast (state.js), render and goto (router.js, state.js).
+   S (state.js), R and API (api.js), loadReports (api.js), toast (state.js), render (admin-router.js) and goto (state.js).
 
    In server mode every change needs a signed-in admin. The SERVER checks that on every request (HttpOnly session cookie).
    This page only reacts: when the server says 401, it goes back to the login page. Hiding buttons is not security. */
@@ -37,7 +37,7 @@ async function adminUpdate(id, patch, okMessage) {
       // The login ended (it expired, the server restarted, or the person signed out elsewhere). Back to the login page.
       S.admin = false;
       S.next = location.hash;
-      goto('#/admin/login');
+      goto('#/login');
     }
     result = { ok: false, error: e };
   } finally {
@@ -55,7 +55,7 @@ async function ensureAdminSession() {
     S.admin = false;
     S.next = location.hash;
     toast('Your admin session ended. Please sign in again.');
-    goto('#/admin/login');
+    goto('#/login');
   }
   return ok;
 }

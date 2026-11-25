@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>READYLINK Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+<div id="bg"><div class="blob b1"></div><div class="blob b2"></div><svg id="cont" viewBox="0 0 1400 900" preserveAspectRatio="xMidYMid slice"></svg></div>
+<div id="app"></div>
+<div class="toast" id="toast" role="status"></div>
+
+<!-- The ADMIN site: its own page, opened at /admin/ on the server. The public site (../index.html) does not load any of the admin files.
+     Order matters (plain scripts share one global scope). ../js/ = code shared with the public site, js/ = admin only. -->
+<script src="js/admin-app.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/data.js"></script>
+<script src="../js/seed-data.js"></script>
+<script src="../js/demo-insights.js"></script>
+<script src="../js/map-data.js"></script>
+<script src="../js/map.js"></script>
+<script src="../js/heatmap.js"></script>
+<script src="../js/illustrations.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/api-server.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/state.js"></script>
+<script src="../js/connection.js"></script>
+<script src="../js/menu.js"></script>
+<script src="../js/pages-public.js"></script>
+<script src="js/admin-shell.js"></script>
+<script src="js/pages-admin.js"></script>
+<script src="js/admin-router.js"></script>
+<script src="js/admin-actions.js"></script>
+<script src="js/admin-events.js"></script>
+<script src="../js/safety-net.js"></script>
+</body>
+</html>

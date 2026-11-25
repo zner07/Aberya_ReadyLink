@@ -1,5 +1,5 @@
 'use strict';
-/* Phase 3 frontend tests. The REAL js/api-server.js, js/api.js, js/admin-actions.js and the helper files run in a
+/* Phase 3 frontend tests. The REAL js/api-server.js, js/api.js, admin/js/admin-actions.js and the helper files run in a
    sandbox with a fake fetch. They check what the admin screen SENDS, what it does when the server says yes or no,
    that it never shows a change as saved before the server confirms it, and that odd reports do not crash it. */
 const { test } = require('node:test');
@@ -108,7 +108,7 @@ test('API.adminWrites follows /api/health: true, false, or unknown when the answ
   assert.equal(forced.API.adminWrites, null, 'unknown when the app was told to use the server without asking');
 });
 
-/* ============================ the update flow (js/admin-actions.js) ============================ */
+/* ============================ the update flow (admin/js/admin-actions.js) ============================ */
 
 const list = (st = 'Pending') => reply(200, { reports: [serverReport({ st })] });
 
@@ -329,18 +329,18 @@ test('the server client copes with a report that has missing fields (no "null" o
 
 /* ============================ wiring ============================ */
 
-test('admin-actions.js is loaded after router.js and before events.js, and events.js no longer defines adminUpdate', () => {
-  const html = read('index.html');
+test('on the admin page admin-actions.js is loaded after the admin router and before the admin events, and admin-events.js does not define adminUpdate', () => {
+  const html = read('admin/index.html');
   const srcs = [...html.matchAll(/<script src="([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(srcs.indexOf('js/admin-actions.js') > srcs.indexOf('js/router.js'));
-  assert.ok(srcs.indexOf('js/admin-actions.js') < srcs.indexOf('js/events.js'));
-  assert.doesNotMatch(read('js/events.js'), /async function adminUpdate\(/);
-  assert.match(read('js/admin-actions.js'), /async function adminUpdate\(/);
-  assert.doesNotMatch(read('js/admin-actions.js'), /document\.|window\.|localStorage/, 'no browser code in this file, so it can be tested');
+  assert.ok(srcs.indexOf('js/admin-actions.js') > srcs.indexOf('js/admin-router.js'));
+  assert.ok(srcs.indexOf('js/admin-actions.js') < srcs.indexOf('js/admin-events.js'));
+  assert.doesNotMatch(read('admin/js/admin-events.js'), /async function adminUpdate\(/);
+  assert.match(read('admin/js/admin-actions.js'), /async function adminUpdate\(/);
+  assert.doesNotMatch(read('admin/js/admin-actions.js'), /document\.|window\.|localStorage/, 'no browser code in this file, so it can be tested');
 });
 
 test('the review page no longer claims there is no login; it only says so when the server has turned admin changes off, and it locks while saving', () => {
-  const admin = read('js/pages-admin.js');
+  const admin = read('admin/js/pages-admin.js');
   assert.doesNotMatch(admin, /no admin login yet/i, 'the Phase 3 warning is gone now that a login exists');
   assert.match(admin, /Admin changes are turned off on this server\./);
   assert.match(admin, /API\.adminWrites!==false\)return ''/);

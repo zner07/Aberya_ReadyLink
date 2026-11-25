@@ -64,7 +64,7 @@ function syncBox(r,withNet=true){const s=syncState(r),can=s==='pending'&&isOnlin
 
 /* DEMO: updates the queue states to match the connection, then redraws. */
 async function applyConnectivity(){await API.setConnectivity(isOnline());await loadQueue()}
-function renderNet(){if(!location.hash.startsWith('#/admin'))render(true)}
+function renderNet(){if(!IS_ADMIN_APP())render(true)}
 async function onConnectionChange(){await applyConnectivity();renderNet()}
 addEventListener('online',onConnectionChange);
 addEventListener('offline',onConnectionChange);

@@ -73,3 +73,25 @@ test('malformed input is rejected', () => {
 test('a normal percent-encoded file name is still allowed to reach express.static', () => {
   assert.equal(classify('/js/my%20file.js').kind, 'asset');
 });
+
+/* ---- the separate admin site ---- */
+
+test('the admin page, its redirect and its scripts are recognised', () => {
+  assert.equal(classify('/admin').kind, 'admin-redirect');
+  assert.equal(classify('/admin?x=1').kind, 'admin-redirect');
+  for (const p of ['/admin/', '/admin/index.html', '/admin/?x=1', '/admin/index.html?v=2']) assert.equal(classify(p).kind, 'admin-index', p);
+  for (const p of ['/admin/js/admin-app.js', '/admin/js/pages-admin.js', '/admin/js/admin-router.js?v=2']) assert.equal(classify(p).kind, 'asset', p);
+  assert.equal(isServable('/admin/'), true);
+  assert.equal(isServable('/admin'), false, 'the bare address is only a redirect');
+});
+
+test('nothing else under /admin is served, and the usual path tricks are still refused there', () => {
+  for (const p of ['/admin/js', '/admin/js/', '/admin/css/x.css', '/admin/server/package.json', '/admin/index.htm', '/admin/other.html', '/ADMIN/', '/Admin']) {
+    assert.equal(isServable(p), false, p);
+    assert.notEqual(classify(p).kind, 'admin-index', p);
+  }
+  for (const p of ['/admin//index.html', '/admin/js//x.js', '/admin/js/.env', '/admin/js/../../server/package.json', '/admin/%2e%2e/server/package.json',
+    '/admin/js/..%2fserver%2fpackage.json', '/admin\\js\\x.js', '/admin/js/x.js%00.png', '/admin/./js/x.js']) {
+    assert.equal(classify(p).kind, 'deny', p);
+  }
+});
